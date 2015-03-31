@@ -1,0 +1,126 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RPI-MATLAB-Simulator
+% http://code.google.com/p/rpi-matlab-simulator/
+% mlcp_fixed_point.m 
+%
+% MCP solver with prox function formulation with fixed point iteration 
+% This is the mlcp fixed point method based on the following order: 
+% 1---------------solve pn 
+% 2---------------solve pf
+% 3---------------solve s
+function solution = mlcp_fixed_point( sim )
+Minv = sim.dynamics.Minv;
+Gn = sim.dynamics.Gn;
+Gf = sim.dynamics.Gf; 
+h = sim.dynamics.h;
+FX = sim.dynamics.Forces;
+MinvPext = Minv * FX * h;
+PSI = sim.contacts.PSI;
+NU = sim.dynamics.Vel;
+U = sim.dynamics.U;
+E = sim.dynamics.E; 
+nc = length(PSI);
+nd = sim.dynamics.nd;
+
+% LCP_FIXED_POINT 
+% This is the prox projection onto the positive plane using the pyramid 
+% iteration with the Newton-Euler equation to make this a mixed LCP problem
+MinvGn = Minv * Gn;
+MinvGf = Minv * Gf;
+
+A = [ Gn'*MinvGn   Gn'*MinvGf  zeros(nc)
+      Gf'*MinvGn   Gf'*MinvGf  E
+      U            -E'         zeros(nc)];
+ 
+% rn = factor / eigs(Gn' * MinvGn, 1);
+% rf = factor / eigs(Gf' * MinvGf, 1);
+% temp = 1/2 * (eigs(Gn' * MinvGn, 1) + eigs(Gf' * MinvGf, 1));
+% rs = factor / temp;
+% parameters to be tuned
+
+ErrorMetric = sim.solver.errmetric;
+
+TuneParams = sim.solver.TuneParams;
+max_iter = TuneParams.max_iter;
+tol = TuneParams.tol;
+r = TuneParams.r;
+rn = r;  rf = r; rs = r;
+
+pn       = zeros(nc, 1);
+pf       = zeros(nc*nd, 1);
+s        = zeros(nc, 1);  
+ 
+solution  = struct();  
+solution.normFBerror = zeros(max_iter, 1);
+solution.fricFBerror = zeros(max_iter, 1);
+solution.total_error = zeros(max_iter , 1);
+solution.normal_error = zeros(max_iter , 1); 
+solution.friction_error = zeros(max_iter , 1);
+solution.stick_or_slide = zeros(max_iter, 1);
+solution.z = zeros(size(A, 2), max_iter);
+solution.iterations = 0;
+solution.direction_error = zeros(max_iter, 1);
+solution.copositive_normal_error = zeros(max_iter, 1);
+solution.copositive_friction_error = zeros(max_iter, 1);
+solution.normal_neg_error = zeros(max_iter, 1);
+solution.fric_neg_error = zeros(max_iter, 1);
+ 
+z = [pn; pf; s];
+b = setb(Gn, Gf, NU, MinvPext, PSI, h, nc); 
+err = Inf;
+
+% Make sure NU is constant inside the loop. No update on NU 
+%% converge the normal force and the frictional force
+
+for iter = 1 : max_iter
+    NU_ellp1 = NU + MinvGn*pn + MinvGf*pf + Minv*FX*h;  % update NU_ellp1, but the base is always NU;
+    solution = updateSolutionData(solution, ErrorMetric, iter, A, z, b, s, U, pn, PSI, pf, nd, Gf, NU_ellp1);
+    old_err = err;
+    err     = solution.total_error(iter);
+    if err < tol  && abs(err - old_err) / abs(old_err) < tol
+        break;
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    pn_ellp1 = update_normal(pn, rn, PSI, h, Gn, NU);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    pf_ellp1 = update_fric(pf, rf, Gf, NU, s, E);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    s_ellp1  = update_sliding(s, rs, U, pn_ellp1, pf_ellp1, E);
+    
+    z = [pn_ellp1; pf_ellp1; s_ellp1];
+    % err = norm(z' * (A * z + b));
+    pn = pn_ellp1;
+    pf = pf_ellp1;
+    s = s_ellp1;
+end
+
+end
+ 
+
+function [pn_ellp1] = update_normal(pn, rn, PSI, h, Gn, NU_ellp1)
+% Pn_ellp1 = prox(Pn - rn (PSI/h + Gn'*NU_ellp1))
+    rhon = PSI/h + Gn'* NU_ellp1;
+    pn_ellp1 = pn - rn*rhon;
+% The normal force can not be negative, project onto the non negative space
+    pn_ellp1(pn_ellp1<0) = 0;
+end
+
+function [pf_ellp1] = update_fric(pf, rf, Gf, NU_ellp1, s, E)
+% Pf_ellp1 = prox(Pf - rf * (Gf * NU_ellp1 + s))
+rhof = Gf' * NU_ellp1 + E * s;
+pf_ellp1 = pf - rf * rhof;
+pf_ellp1(pf_ellp1 < 0) = 0;
+end
+
+function [s_ellp1]  = update_sliding(s, rs, U, pn_ellp1, pf_ellp1, E)
+rhos = U * pn_ellp1 - E' * pf_ellp1;
+s_ellp1 = s - rs * rhos;
+s_ellp1(s_ellp1 < 0) = 0;
+end
+
+function b = setb(Gn, Gf, NU, MinvPext, PSI, h, nc)
+b = [ Gn'*(NU + MinvPext) + PSI/h;    % FX*h could be replaced if we stored Pext instead of Fext
+      Gf'*(NU + MinvPext);
+      zeros(nc,1) ];    
+end
+

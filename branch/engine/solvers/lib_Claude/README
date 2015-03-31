@@ -1,0 +1,71 @@
+MLCP library. 
+
+Author: Claude Lacoursiere, 
+UMIT/HPC2N
+Umeå University, 
+901 87 Umeå, 
+Sweden
+claude@hpc2n.umu.se
+
+
+
+
+This is a small library of non-smooth Newton solvers for mixed linear
+complementarity problems. 
+
+There are three main solvers here. 
+
+01) boxed_block_pivot
+
+This is a block pivot "Bard type" algorithm which amounts to applying
+Newton's method directly on the Fischer Burmeister function for mixed
+linear complementarity. 
+
+
+02) zhang_gao_smoothing
+This is a Newton-type optimization algorithm with line search.  The main
+idea here is to work on a smoothed version of the Fischer Burmeister
+function. 
+
+02) li_fukushima_newton
+
+This is similar to the previous. 
+
+Method 01 is subject to "cycling" i.e., repeated iterations which lead to
+the same point.  This is normal in undamped root-finding Newton methods
+when applied to non-smooth functions.  However, it succeeds very often on
+real problems but not so well on random ones.  In principle, the cycling
+problem can be removed using smart line search or maybe some other
+techniques.  This remains to be investigated.   The linear algebra can be
+speeded up using factorization updates and downdates but this is not done
+here. 
+
+Method 02 is more reliable but can still leave large residual errors,
+especially when the condition number is large.  As is, the linear algebra
+for this problem cannot be speeded up and each iteration involves the
+factorization of a matrix of the same size as the problem, and that matrix
+is non-symmetric. 
+
+The three scripts have been designed so as to have the same number of
+arguments which come in the same order.  This allows for automatic testing
+of all methods on a family of problems and in principle, the list of solver
+can be increased as long as there is a wrapper scripts to set the arguments
+in the same order. 
+
+The directory contains also a few utility routines to generate random
+symmetric positive definite matrices of known condition number and sparse
+density, as well as random MLCPs. 
+
+There is a data analysis script: 
+
+comparison_plots
+
+
+and a program to generate and solve random problems: 
+
+test_random_problems
+
+and a driver for everything: 
+
+runme.m
+

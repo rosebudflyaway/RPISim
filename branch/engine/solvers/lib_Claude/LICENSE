@@ -1,0 +1,44 @@
+Copyright (2012)  
+Author: 
+Claude Lacoursiere
+UMIT/HPC2N
+Umeå University, 
+901 87 Umeå, 
+Sweden
+claude@hpc2n.umu.se
+
+
+LICENSE: 
+You may use the octave scripts  listed below for research or teaching
+purposes if you have obtained them directly from the author or from
+Prof. Jeff Trinkle, Rensselaer Polytechnic Institute.   This is academic
+code that is not intended to be distributed.  The algorithms are listed in
+the scripts and are published in the scientific literature. 
+
+This source code is provided AS IS without any warranty of usability,
+correctness, and the author declines any and all liability related to it.
+
+You may modify the source code but you may not distribute it.  
+
+
+The source code is contained in the following files: 
+
+block_switch.m
+boxed_block_pivot.m
+comparison_plots.m
+cycle_detection.m
+cycle_resolution.m
+get_complementarity_error.m
+get_complementarity_point.m
+LICENSE
+li_fukushima_newton.m
+rand_blcp_chen.m
+rand_chen_matrix.m
+rand_lcp_chen.m
+rand_ortho.m
+README
+runme.m
+solve_subproblem.m
+split_indicies.m
+test_random_problems.m
+zhang_gao_smoothing.m

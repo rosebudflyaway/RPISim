@@ -1,0 +1,553 @@
+\title{RPI-MATLAB-Simulator \\ \normalsize{}}
+\author{%Jedediyah Williams \\ \url{willij16@rpi.edu}
+\url{code.google.com/p/rpi-matlab-simulator}}
+\date{\today}
+
+\documentclass{article}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{url}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usepackage{colortbl}
+\usetikzlibrary{shapes, arrows, snakes}
+\usetikzlibrary{positioning}
+
+
+% Section title colors
+\titleformat{\section}
+{\color{black}\normalfont\Large\bfseries} 	% Section title color
+{\color{black}\thesection}{1em}{} 	 	% Section number color
+
+% Useful commands
+\newcommand{\tab}{\hspace*{2em}}
+
+\begin{document}
+\maketitle
+
+\newpage
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INTRODUCTION 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Introduction}
+\label{sec:introduction}
+RPI-MATLAB-Simulator is a tool for research and education in multi-body dynamics.  
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Installation and Quickstart
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Installation and Quickstart}
+The RPI-MATLAB-Simulator is currently hosted on Google code and uses SVN.  Various clients for SVN are available (\url{http://subversion.apache.org/packages.html}).
+Instructions for getting the simulator are under the \emph{Source} tab of the Google code site.  They are repeated here.
+\subsection{Installation}
+Under GNU Linux, checkout a read-only copy using \\ 
+	\begin{tabular}{c} 
+\rowcolor[gray]{.9}	
+	svn checkout http://rpi-matlab-simulator.googlecode.com/svn/simulator/ rpi-matlab-simulator
+    \end{tabular} \\ \\
+Windows users may want to use an SVN client such as TortoiseSVN.  
+ 
+\subsection{Hello World}
+Once the simulator code is downloaded, use MATLAB to \\ 
+\tab 1. Navitgate to the simulator e.g. 
+\begin{tabular}{c} 
+\rowcolor[gray]{.9}	
+	cd \textbackslash home\textbackslash user\textbackslash rpi-matlab-simulator. 
+    \end{tabular} \\
+\tab 2. Run SETUP.m  \\
+\tab 3. Run Example$\_$script  \\ \\
+\emph{SETUP.m} simply adds the necessary directories to the MATLAB path.  In future versions, it may compile .mex files for increased performance.  
+\emph{Example$\_$script.m} adds a small number of simple bodies to a scene and starts a simulation.  
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scripting a Scene
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Scripting a Scene}
+\label{sec:scripting}
+
+This section will get you started writing scenes such as the one in Example$\_$script.m.  The typical procedure for creating a scene is as follows: \\
+\tab 1. Create Bodies  \\
+\tab 2. Create an instance of Simulation.m \\
+\tab 3. Run the simulation
+
+\subsection{Adding Bodies to a Scene}
+Position and orientation. \\
+Static vs. dynamic. \\
+Velocity, acceleration, and forces. \\
+
+\subsection{Assigning Formulations and Solvers}
+\subsection{Example Script}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Overview of Simulator and Components
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview of Simulator and Components}
+This section introduces the compnents of the simulator and explains the connections between them.
+
+\subsection{File Structure}
+The layout of the directories corresponds to the way the various compenents are accessed. 
+\subsubsection{Simulator.m}   
+The \emph{Simulator} class is the main class and holds all of the information related to a simulation including all body information, which formulation to use, which solver to use, as well as any additional information the user wants to store.  Each component (e.g. the dynamics or solver) has a single argument which is the simulation object itself.  No values are ever returned, but values are assigned to the variables in the simulation object.  
+\subsubsection{Body Geometries}
+All bodies inherit common attributes from BODY.m, and then define their geometric properties.  
+\subsubsection{Collision Detection}
+\subsubsection{Dynamics Formulations}
+\subsubsection{Solvers} 
+
+\subsection{The Simulation Loop}
+When a simulation is run, the following loop is executed at every time step: \\
+\tab Collision Detection \\ 	% TODO: replace with image
+\tab Dynamics Formulation \\
+\tab Solve \\
+\tab Kinematic Update \\
+Further, if data recording is enabled, then information at the end of each iteration is written to file. 
+
+Kinematic Update:  
+For each body $P_{i}$ involved in a collision, $\nu_{i}^{l+1}$ should be supplied by the solver.
+\begin{center}
+$
+\nu_{i} \gets \nu_{i}^{l+1}    \nonumber
+$ 
+
+$
+u_{i} \gets u_{i} + h \nu_{i}^{l+1}   \nonumber
+$. 
+\end{center}
+For bodies not in contact, 
+\begin{center}
+$
+\nu_{i} \gets \nu_{i} + h \frac{F_{i ext}}{m_{i}}
+$
+
+$
+u_{i} \gets u_{i} + h \nu_{i}
+$.
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Adding formulations and solvers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Adding Custom Components}
+\label{sec:customComponents}
+This section details how to extend the simulator with new components.  Components will take a single argument, the Simulation object itself, and return no arguments.  All changes are assigned to variables and structs in the Simulation object.  
+
+\subsection{Custom Collision Detection}
+In order to add custom collision detection, familiarize yourself with \emph{Contact.m} and the body geometries.  
+
+\subsection{Custom Dynamics Formulation}
+When the formulation function is called, there are several precomputed values in the \emph{Simulation.dynamics} struct that may be useful.  These values are detailed in section \ref{sec:preDynamics}.   \\
+Steps to creating a custom formulation: \\
+Create the formulation function, e.g. \emph{myFormulation.m}. \\
+\tab The function must take the single argument of the Simulation object.  By convention, we name this "sim."  The function should return nothing.  Instead, values are assigned to the struct \emph{dynamics} in the Simulation class.  This may be as simple as storing a matrix $A$ and vector $b$, depending on the solver that will be used.   \\
+When writing the simulation script, add your formulation by calling \emph{addFormulation(@myFormulation)} with the Simulation object.    
+
+\subsection{Custom Solver}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Collision Detection
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Collision Detection}
+\label{sec:collisionDetection}
+Intro - CONTACT.m
+
+\subsection{Sphere-Sphere}
+Spheres
+\subsection{Cylinder-Cylinder}
+Cylinders
+\subsection{Cylinder-Sphere}
+Both!
+\subsection{Mesh-Mesh}
+\subsection{Mesh-Sphere} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dynamics Formulations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Dynamics Formulations} 
+\label{sec:dynamics}
+
+\subsection{preDynamics.m} \label{sec:preDynamics}
+There are several values that are formulated after collision detection.  These include: \\
+M ... discriptions \\
+Gn \\
+Gf \\
+U \\
+E \\
+The following subsections detail some of the formulations that are already included in the solver.  These formulations use the values from preDynamics, and may define additional variables.  
+
+\subsection{Linear Complementarity Formulation}
+One may choose to use a solver for linear complemntarity problems (LCP).  The LCP formulation is derived from the MCP formulation in the previous section.  Here, we have 
+\begin{equation}
+0 \leq
+\begin{vmatrix} 
+G_n^{T} M^{-1} G_n & G_n^{T} M^{-1} G_f & 0 \\
+G_f^{T} M^{-1} G_n & G_f^{T} M^{-1} G_f & E \\
+U & -E^{T} & 0
+\end{vmatrix} 
+\begin{vmatrix}
+p_{n}^{l+1} \\
+p_{f}^{l+1} \\
+s^{l+1}
+\end{vmatrix} 
++ 
+\begin{vmatrix}
+G_n^{T} (\nu^{l} + M^{-1} p^{l}_{ext}) + \Psi_{n}^{l}/h \\
+G_f^{T} (\nu^{l} + M^{-1} p^{l}_{ext}) \\
+0
+\end{vmatrix} \\
+\perp  \\
+\begin{vmatrix}
+p_{n}^{l+1} \\
+p_{f}^{l+1} \\
+s^{l+1}
+\end{vmatrix}  \geq 0  \nonumber
+\end{equation}
+
+
+\subsection{Mixed Linear Complementarity Formulation}
+Once potential collisions are detected, the dynamics are determined by solving an mLCP of the form
+\begin{equation}
+\begin{vmatrix}
+0 \\ \rho_{n}^{l+1} \\ \rho_{f}^{l+1} \\ \sigma^{l+1} 
+\end{vmatrix} =
+\begin{vmatrix} 
+M & -G_{n} & -G_{f} & 0 \\
+G_{n}^{T} & 0 & 0 & 0 \\
+G_{f}^{T} & 0 & 0 & E \\
+0 & U & -E^{T} & 0
+ \end{vmatrix} 
+\begin{vmatrix}
+\nu^{l+1} \\
+p_{n}^{l+1} \\
+p_{f}^{l+1} \\
+s^{l+1}
+\end{vmatrix} + 
+\begin{vmatrix}
+-M\nu^{l}-p_{ext}^{l} \\
+\Psi_{n}^{l}/h \\
+0 \\
+0
+\end{vmatrix}
+\end{equation}
+
+
+where each of the submatrices are defined in terms of the bodies found to be in collision, indexed over $k$ collisions by the $i^{th}$ body and $j^{th}$ collision, i.e.\\
+\begin{equation}
+M = blockdiag(M_1,...,M_{n_c})
+\nonumber
+\end{equation} 
+where 
+$M_i = \begin{bmatrix} m_iI_{(3\times3)} & \mathbf{0} \\ \mathbf{0} & J_{i (3\times3)}  \end{bmatrix}
+\text{ and } n_c = \text{ number of contacts, }$
+% blockdiag(diag(m_{1},m_{1},J_{1}), \ldots , diag(m_{k},m_{k},J_{k})) 
+
+\begin{equation}
+G_{n_{ij}} = \begin{bmatrix} 
+\hat{n}_{ij}  \\ 
+(r_{ij} \times \hat{n}_{ij})_{Z}
+\end{bmatrix},  \nonumber
+\end{equation}
+
+\begin{equation}
+G_{f_{ij}} = \begin{bmatrix} 
+\hat{d}_{ij1} & ... & \hat{d}_{ijn_d} \\
+(r_{ij} \times  \hat{d}_{ij1})_Z  & ... & (r_{ij} \times  \hat{d}_{ijn_d})_Z
+\end{bmatrix}
+\nonumber
+ \end{equation}
+where $n_d$ is the number of friction directions,   
+
+\begin{equation}
+U = diag(\mu_{1}, \ldots, \mu_{k}  ),  \nonumber
+ \end{equation}
+
+\begin{equation}
+E = blockdiag
+    \begin{pmatrix}
+	\begin{vmatrix} 1 \\ 1 \\ \vdots \end{vmatrix}_1 , \ldots , 
+	\begin{vmatrix} 1 \\ 1 \\ \vdots \end{vmatrix}_k  \nonumber 
+    \end{pmatrix}
+\end{equation}
+where each column vector of ones has length equal to the number of friction directions in the friction cone.
+
+After the MCP is formed using the information from the collision detection routine, it is passed to the PATH solver [4].  
+
+
+\subsection{PEG}
+Before we formulate the constraints and dynamics, let us define several terms.  Consider the 2D case of body $B_1$ near body $B_2$ and the possible vertex-edge collisions.  There are 3 \emph{contacts} with 7 total possible \emph{subcontacts}: $v_1$ with edges $(e_3, e_4, e_5)$, $v_2$ with edges $(e_1, e_2)$, or $v_3$ with edges ($e_1$, $e_2$).  Let contact $C_1$ include vertex $v_1$, then we say that vertex $v_1$ is in contact with the \emph{mainfold} consisting of $(e_3, e_4, e_5)$.  It is possible for a manifold to contain zero or all of the edges of a body; this is determined by the collision detection routine.  \\ \\
+Number of contacts: $n_c$  \\
+Number of subcontacts (facets) in a given manifold: $n_s$  \\
+Number of friction directions: $n_d$  \\
+Time step size: $h$ 
+\subsubsection{MCP Formulation of PEG}
+\begin{equation}
+\begin{vmatrix}
+0 \\ \rho_{n}^{l+1} \\ \rho_{f}^{l+1} \\ c_{a}^{l+1}  \\ \sigma^{l+1} 
+\end{vmatrix} =
+\begin{vmatrix} 
+M & -G_{n} & -G_{f} & 0 & 0 \\
+G_{n}^{T} & 0 & 0 & E_1 & 0 \\
+G_{f}^{T} & 0 & 0 & 0 & E \\
+G_a^{T} & 0 & 0 & E_2 & 0 \\
+0 & U & -E^{T} & 0 & 0 
+ \end{vmatrix} 
+\begin{vmatrix}
+\nu^{l+1} \\
+p_{n}^{l+1} \\
+p_{f}^{l+1} \\
+c_{a}^{l+1} \\
+s^{l+1}
+\end{vmatrix} + 
+\begin{vmatrix}
+-M\nu^{l}-p_{ext}^{l} \\
+\Psi_{n}^{l}/h \\
+0 \\
+\Delta \Psi_a / h  \\
+0
+\end{vmatrix}
+\end{equation}
+
+
+where each of the submatrices are defined in terms of the bodies found to be in contact, indexed over $n_c$ contacts by the $i^{th}$ body and $j^{th}$ contact, i.e.\\
+\begin{equation}
+M = blockdiag(M_1,...,M_{n_c})
+\text{ where } 
+M_i = \begin{bmatrix} m_iI_{(3\times3)} & \mathbf{0} \\ \mathbf{0} & J_{i (3\times3)}  \end{bmatrix}, 
+\nonumber
+\end{equation}
+
+
+\begin{equation}
+G_{n_{ij}} = \begin{bmatrix} 
+\hat{n}_{ij}  \\ 
+(r_{ij} \times \hat{n}_{ij})_{Z}
+\end{bmatrix},  \nonumber
+\end{equation}
+
+\begin{equation}
+G_{f_{ij}} = \begin{bmatrix} 
+\hat{d}_{ij1} & ... & \hat{d}_{ijn_d} \\
+(r_{ij} \times  \hat{d}_{ij1})_Z  & ... & (r_{ij} \times  \hat{d}_{ijn_d})_Z
+\end{bmatrix}, 
+\nonumber
+ \end{equation}
+
+\begin{equation}
+ G_{a}^T = \begin{bmatrix} G_{a_1}^T \\  \vdots  \\  G_{a_{n_c}}^T\end{bmatrix}  \nonumber
+\text{ where }
+ G_{a_j}^T = \begin{bmatrix} G_{n_1}^T - G_{n_2}^T \\  \vdots  \\  G_{n_1}^T  -  G_{n_s}^T \end{bmatrix},
+\nonumber
+\end{equation}
+
+\begin{equation}
+ \Psi_a = \begin{bmatrix} \Psi_{a_1} \\ \vdots \\ \Psi_{a_{n_s}} \end{bmatrix} \text{ where }
+ \Psi_{a_j} = \begin{bmatrix} \Psi_1 - \Psi_2 \\ \vdots  \\ \Psi_1 - \Psi_{n_s} \end{bmatrix}, 
+\nonumber
+\end{equation}
+
+\begin{equation}
+U = diag(\mu_{1}, \hspace{2mm} \ldots \hspace{2mm}, \mu_{n_s}  ),  \nonumber
+ \end{equation}
+
+\begin{equation}
+E = blockdiag
+    \begin{pmatrix}
+	\begin{vmatrix} 1 \\ 1 \\ \vdots \end{vmatrix}_1 , \hspace{2mm} \ldots \hspace{2mm} , 
+	\begin{vmatrix} 1 \\ 1 \\ \vdots \end{vmatrix}_{n_c}  \nonumber 
+    \end{pmatrix}
+\end{equation}
+where each column vector of ones has length equal to the number of friction directions in the friction cone.
+
+\begin{equation}
+E_1 = blockdiag(E_{1_1}, \dots , E_{1_{n_c}}) \text{ where } E_{1_j} = ones(n_s - n_d,1) \text{(is this true?)}
+\nonumber
+\end{equation}
+
+\begin{equation}
+E_2 = blockdiag(E_{2_1}, \dots , E_{2_{n_c}}) \text{ where } E_{2_j} = tril(ones(n_s - 1))
+\nonumber
+\end{equation}
+
+After the MCP is formed using the information from the collision detection routine, it is passed to the PATH solver [4].  
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Solvers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Solvers}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Kinematic Update
+% This can really be a subsection somewhere else. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Kinematic Update}
+%For each body $P_{i}$ involved in a collision, $\nu_{i}^{l+1}$ should be supplied by the solver.
+%\begin{center}
+%$
+%\nu_{i} \gets \nu_{i}^{l+1}    \nonumber
+%$ 
+%
+%$
+%u_{i} \gets u_{i} + h \nu_{i}^{l+1}   \nonumber
+%$. 
+%\end{center}
+%For bodies not in contact, 
+%\begin{center}
+%$
+%\nu_{i} \gets \nu_{i} + h \frac{F_{i ext}}{m_{i}}
+%$
+%
+%$
+%u_{i} \gets u_{i} + h \nu_{i}
+%$.
+%\end{center}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Joints
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Joints}
+
+\subsection{Bender's Correction}
+When moving from a time $t_0$ to a time $t_0 + h$, Bender's correction first iterates over all joints to correct position (while also updating velocities), and then iterates over all joints again to correct joint velocities. 
+
+\subsubsection{Position Correction}
+First we determine the center of the joints for both bodies at time $t_0+h$ where each center position is given by
+\begin{center}
+$C(t_0+h) = C(t_0) + \nu(t_0) h + \frac{1}{2} g h^2$.
+\end{center}
+An error is determined from a vector $d$ between the two points at time $t_0+h$, 
+\begin{center}
+$d(t_0+h) := B(t_0+h) - A(t_0+h)$.
+\end{center}
+Matrices $K_1$ and $K_2$ are calculated for each body where 
+\begin{center}
+$K_i := \frac{1}{m_i} I_3 - \tilde{r}_i  J_i^{-1} \tilde{r}_i$.
+\end{center}
+Let $K = K_1+K_2$, then the position correcting impulse $p$ can be determined by inverting the matrix $K$ in 
+\begin{center}
+$\frac{d(t_0+h)}{h} = K p$
+\end{center}
+
+
+\subsubsection{Velocity Correction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendix 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\appendix
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendix A, list of variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{List of Variables in RPI-MATLAB-Simulator}
+\begin{tabular}{ l | l | l | p{5cm} }
+\textbf{Variable} & \textbf{Assigned by} & \textbf{Used by} & \textbf{Description} \\ \hline
+  E &  \emph{preDynamics.m} & formulation \& solver &    \\
+  Gf &  \emph{preDynamics.m} & formulation \& solver &    \\
+  Gn & \emph{preDynamics.m} & formulation \& solver &     \\
+  M & \emph{preDynamics.m} & formulation \& solver &  Mass-inertia matrix, only bodies in contact are included.  \\
+  U &  \emph{preDynamics.m} & formulation \& solver &    \\
+\end{tabular}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendix B, Scripting cheat sheet
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Scripting Cheat Sheet}
+\textbf{Adding objects} \\
+s = bodySphere(mass, radius) \\
+c = bodyCylinder(mass, radius, height) \\
+p = bodyPlane(pointOnPlane, normalVector) \\
+c = mesh$\_$cube()  \\
+c = mesh$\_$cylinder()  \\
+d = mesh$\_$dodecahedron()  \\
+i = mesh$\_$icosahedron()  \\
+o = mesh$\_$octahedron()  \\
+t = mesh$\_$tetrahedron()  \\
+\\
+\textbf{Body Properties} \\
+b.color = 'red'  \\
+b.color = rand(1,3)   \tab Assigns random color \\
+b.setPosition(X,Y,Z) \\
+b.quat = quat(axis, angle)  \tab Sets rotation of object  \\
+b.faceAlpha = [0 ... 1]   \tab Sets transparency of object \\
+b.scale(scale)  \tab Scales the body size (not implemented for all bodies!) \\
+\\
+\textbf{Simulation Properties} \\
+sim = Simulation(bodies, timeStep)  \tab where bodies is a cell array of bodies, and timeStep is the step size \\
+sim.formulation(\emph{FORMULATION})   Assigns which dynamics formulation to use   \\
+\tab List of formulations   \\
+sim.solver(\emph{SOLVER}) \tab 	Assigns which solver to use   \\
+\tab List of solvers   \\
+sim.gravityON()   \\  
+sim.gravityOFF()  \\
+sim.MAX$\_$ITERS = 1000   \tab Sets the maximum number of iterations  \\
+sim.enableGUI() 	\tab Turns on GUI (default)  \\
+sim.disableGUI()  	\tab Turns of GUI  \\
+sim.setRecord([true, false]) \tab turns data recording on or off (off by default)
+
+
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
